@@ -1,0 +1,53 @@
+testing steps:
+
+1. showroom/sportcar/inventory/ferrari_488
+{
+  "car_id": "ferrari_488",
+  "units_available": 20,
+  "price": 400000.0,
+  "color": "black"
+}
+
+retain: yes, qos: 2
+
+2. showroom/sportcar/status/ferrari_488
+
+{
+  "car_id": "ferrari_488",
+  "status": "available" atau on display
+}
+
+
+retain: yes, qos: 1
+
+3. showroom/sportcar/sensor/door/ferrari_488
+
+{
+  "door_status": "open"
+}
+
+retain: no, qos: 1
+
+4. showroom/sportcar/sensor/hood/ferrari_488
+
+{
+  "hood_status": "open"
+}
+
+retain: no, qos: 1
+
+5. showroom/sportcar/status/ferrari_488/price
+
+{
+  "car_id": "ferrari_488",
+  "new_price": 340000.0
+}
+
+6. showroom/sportcar/expiry/mc_laren_720s
+
+{
+  "car_id": "mc_laren_720s",
+  "message": "Flash sale ends in 5s"
+}
+
+message expiry interval: 5, retain: no, qos: 1
