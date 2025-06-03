@@ -49,28 +49,30 @@ python3 publisher.py
 > Melakukan beberapa contoh publish (inventory, status, sensor, price, expiry, request, flow), lalu disconnect normal.
 
 4. Authentication
-> Menggunakan username_pw_set(USERNAME, PASSWORD) jika broker butuh autentikasi. Jika broker publik (misal HiveMQ) tidak memerlukan, field tersebut bisa dikosongkan atau di‐comment.
-<img src="./img/authentication.jpg">
+
+   > Menggunakan username_pw_set(USERNAME, PASSWORD) jika broker butuh autentikasi. Jika broker publik (misal HiveMQ) tidak memerlukan, field tersebut bisa dikosongkan atau di‐comment.
+   > <img src="./img/authentication.jpg">
 
 5. QoS 0, 1, 2
-> Semua fungsi publish (publish_inventory_update, publish_sensor_door, dll.) menerima parameter qos. Di subscriber.py disebutkan pada topik:
+   > Semua fungsi publish (publish_inventory_update, publish_sensor_door, dll.) menerima parameter qos. Di subscriber.py disebutkan pada topik:
+
 ```
 1. QoS 2 untuk inventaris (paling andal, tanpa duplikat),
 2. QoS 1 untuk sensor, status, price update, request–response, expiry, flow, LWT.
 3. (QoS 0 juga bisa digunakan di fungsi, mis. publish_price_change(..., qos=0) bila diinginkan).
 ```
+
 <img src="./img/qos.jpg">
 
 6. Retained Messages
-Subscriber baru yang kemudian subscribe ke topik tersebut langsung menerima pesan terakhir yang di‐retained.
-<img src="./img/retained message.jpg">
-<img src="./img/retained message 2.jpg">
+   Subscriber baru yang kemudian subscribe ke topik tersebut langsung menerima pesan terakhir yang di‐retained.
+   <img src="./img/retained message.jpg">
+   <img src="./img/retained message 2.jpg">
 
 7. Uji LWT (Last Will)
 
 > Setelah `publisher.py` sedang berjalan, force‐kill (misal `kill -9 PID`) sehingga publisher tidak melakukan disconnect clean. Subscriber akan mencetak LWT.
-<img src="./img/lwt.jpg">
-<img src="./img/kill lwt.jpg">
+> <img src="./img/lwt.jpg"> > <img src="./img/kill lwt.jpg">
 
 8. Jalankan Skrip Pengujian
 
@@ -93,18 +95,93 @@ python3 test_flow_control.py
 ```
 
 9. Flow Control (Rate Limiting)
-> Membatasi kecepatan publish supaya broker dan subscriber tidak kewalahan.
+   > Membatasi kecepatan publish supaya broker dan subscriber tidak kewalahan.
+
 ```
 test_flow_control.py menguji tiga kasus:
 1. 10 pesan berturut‐turut → throughput ~5 msg/s.
 2. 5 pesan dengan delay 0.01 s → throughput mendekati 5 msg/s.
 3. 5 pesan dari thread berbeda → antrian tetap mem‐publish hanya 5 msg/s meski threads “sent” secara bersamaan.
 ```
+
 <img src="./img/flow control.jpg">
 <img src="./img/flow control 2.jpg">
 
 10. Ping–Pong (Keep-Alive)
-> Disini kita tidak mencode manual PING/PONG, karena library Paho MQTT yang menangani secara built‐in. Paho MQTT otomatis kirim PINGREQ/PINGRESP untuk menjaga koneksi tetap hidup.
+    > Disini kita tidak mencode manual PING/PONG, karena library Paho MQTT yang menangani secara built‐in. Paho MQTT otomatis kirim PINGREQ/PINGRESP untuk menjaga koneksi tetap hidup.
+
 ```
 client.connect(BROKER_HOST, BROKER_PORT, keepalive=KEEPALIVE)
+```
+
+## 🧪 Testing Scenarios
+
+**1. Inventory Publishing**
+
+- Topic: `showroom/sportcar/inventory/ferrari_488`
+- QoS: 2
+- Retain: ✅
+- Payload:
+
+```json
+{
+  "car_id": "ferrari_488",
+  "units_available": 20,
+  "price": 400000.0,
+  "color": "black"
+}
+```
+
+**2. Car Status Publishing**
+
+- Topic: `showroom/sportcar/status/ferrari_488`
+- QoS: 1
+- Retain: ❌
+- Payload:
+
+```json
+{
+  "car_id": "ferrari_488",
+  "status": "available"
+}
+```
+
+**3. Door Sensor Status**
+
+- Topic: `showroom/sportcar/sensor/door/ferrari_488`
+- QoS: 1
+- Retain: ❌
+- Payload:
+
+```json
+{
+  "door_status": "open"
+}
+```
+
+4. Hood Sensor Status
+
+- Topic: `showroom/sportcar/sensor/hood/ferrari_488`
+- QoS: 1
+- Retain: ❌
+- Payload:
+
+```json
+{
+  "hood_status": "open"
+}
+```
+
+**5. Price Update Request**
+
+- Topic (Request): showroom/sportcar/status/ferrari_488/price
+- QoS: 1
+- Retain: ❌
+- Payload:
+
+```json
+{
+  "car_id": "ferrari_488",
+  "new_price": 340000.0
+}
 ```
