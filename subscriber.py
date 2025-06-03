@@ -11,13 +11,12 @@ from paho.mqtt.packettypes import PacketTypes
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-# --------------------------- CONFIGURASI ---------------------------
-BROKER_HOST = "broker.hivemq.com"
+BROKER_HOST = "broker.hivemq.com" # q4229b00.ala.asia-southeast1.emqxsl.com
 BROKER_PORT = 8883
 USERNAME = "kelompokB"
 PASSWORD = "hzwnkptrm"
 UNIQUE_TOPIC_PREFIX = "showroom/sportcar"
-KEEPALIVE = 60
+KEEPALIVE = 5
 RATE_LIMIT_SUB = 5
 MAX_QUEUE_SIZE = 50
 
@@ -36,7 +35,6 @@ TOPICS_TO_SUBSCRIBE = [
 message_queue = Queue(maxsize=MAX_QUEUE_SIZE)
 last_process_time = 0.0
 
-# --------------------------- CALLBACKS ---------------------------
 def on_connect(client, userdata, flags, reasonCode, properties):
     print(f"[Subscriber] Connected with result code {reasonCode}")
     for topic, qos in TOPICS_TO_SUBSCRIBE:
@@ -154,7 +152,6 @@ def handle_incoming_message(msg):
 def handle_request(msg):
     props = msg.properties
 
-    # Ambil ResponseTopic dan CorrelationData (harus huruf besar di Paho-MQTT)
     if props:
         resp_topic = props.ResponseTopic if hasattr(props, "ResponseTopic") else None
         raw_corr   = props.CorrelationData if hasattr(props, "CorrelationData") else None
@@ -197,15 +194,12 @@ def handle_request(msg):
 
     if resp_topic and corr:
         props_resp = Properties(PacketTypes.PUBLISH)
-        # **HARUS** pakai nama persis 'CorrelationData'
         props_resp.CorrelationData = corr.encode() if isinstance(corr, str) else corr
         props_resp.PayloadFormatIndicator = 1
         client.publish(resp_topic, response_payload, qos=1, retain=False, properties=props_resp)
         print(f"[Subscriber][REQ] Sent response for {car_id} to {resp_topic} | CorrData={corr}")
-        # Tambahkan jeda kecil sebelum unsubscribe pada sisi test jika diperlukan
         time.sleep(0.05)
 
-# --------------------------- INISIALISASI CLIENT ---------------------------
 client = Client(
     client_id=f"subscriber_{int(time.time())}",
     protocol=MQTTv5

@@ -6,17 +6,16 @@ from paho.mqtt.client import Client, MQTTMessageInfo, MQTTv5
 from paho.mqtt.properties import Properties
 from paho.mqtt.packettypes import PacketTypes
 
-# --------------------------- CONFIGURASI ---------------------------
-BROKER_HOST = "broker.hivemq.com"
+BROKER_HOST = "broker.hivemq.com" # q4229b00.ala.asia-southeast1.emqxsl.com
 BROKER_PORT = 8883                 # 8883 untuk MQTTS
 USERNAME = "kelompokB"
 PASSWORD = "hzwnkptrm"
 UNIQUE_TOPIC_PREFIX = "showroom/sportcar"
-KEEPALIVE = 60
+KEEPALIVE = 5
 RATE_LIMIT_PUB = 5                 # pesan per detik maksimum
 
 # Topik‐topik Standar
-TOPIC_INVENTORY = f"{UNIQUE_TOPIC_PREFIX}/inventory"  # inventory updates
+TOPIC_INVENTORY = f"{UNIQUE_TOPIC_PREFIX}/inventory"  
 TOPIC_SENSOR_DOOR = f"{UNIQUE_TOPIC_PREFIX}/sensor/door"
 TOPIC_SENSOR_HOOD = f"{UNIQUE_TOPIC_PREFIX}/sensor/hood"
 TOPIC_STATUS = f"{UNIQUE_TOPIC_PREFIX}/status"
@@ -27,7 +26,6 @@ TOPIC_FLOW = f"{UNIQUE_TOPIC_PREFIX}/flow"
 
 last_pub_time = 0.0
 
-# --------------------------- CALLBACKS ---------------------------
 def on_connect(client, userdata, flags, reasonCode, properties):
     print(f"[Publisher] Connected with result code {reasonCode}")
 
@@ -38,9 +36,6 @@ def on_publish(client, userdata, mid):
     print(f"[Publisher] Message acked, MID={mid}")
 
 def on_message(client, userdata, msg):
-    """
-    Callback untuk menerima respons request–response
-    """
     try:
         payload = msg.payload.decode()
         props = msg.properties
@@ -49,7 +44,6 @@ def on_message(client, userdata, msg):
     except Exception as e:
         print(f"[Publisher] Error decoding response: {e}")
 
-# --------------------------- FUNGI PUBLISH DENGAN RATE LIMIT ---------------------------
 def send_with_rate_limit(topic, payload, qos=0, retain=False, properties=None):
     global last_pub_time
     now = time.time()
@@ -57,7 +51,6 @@ def send_with_rate_limit(topic, payload, qos=0, retain=False, properties=None):
     min_interval = 1.0 / RATE_LIMIT_PUB
     if elapsed < min_interval:
         time.sleep(min_interval - elapsed)
-    # Publish
     if properties:
         info: MQTTMessageInfo = client.publish(topic, payload=payload, qos=qos, retain=retain, properties=properties)
     else:
@@ -65,7 +58,6 @@ def send_with_rate_limit(topic, payload, qos=0, retain=False, properties=None):
     last_pub_time = time.time()
     return info
 
-# --------------------------- INISIALISASI CLIENT ---------------------------
 client = Client(client_id=f"publisher_{uuid.uuid4()}", protocol=MQTTv5)
 client.username_pw_set(USERNAME, PASSWORD)
 client.tls_set(
@@ -96,7 +88,6 @@ client.on_message    = on_message
 client.connect(BROKER_HOST, BROKER_PORT, keepalive=KEEPALIVE)
 client.loop_start()
 
-# --------------------------- FUNGSI FASILITAS REAL‐LIFE ---------------------------
 
 def publish_inventory_update(car_id: str, units: int, price: float, color: str, qos: int = 2, retained: bool = True):
     topic = f"{TOPIC_INVENTORY}/{car_id}"
@@ -112,13 +103,10 @@ def publish_inventory_update(car_id: str, units: int, price: float, color: str, 
     print(f"[Publisher][INVENTORY] Car={car_id} | Units={units} | Price={price} | Color={color} | QoS={qos} | Retained={retained}")
 
 def publish_sensor_door(car_id: str, status: str, qos: int = 1, retained: bool = False):
-    """
-    Publikasikan status sensor pintu dalam payload JSON
-    { "door_status": "open" } atau { "door_status": "closed" }
-    """
+
     topic = f"{TOPIC_SENSOR_DOOR}/{car_id}"
     payload = json.dumps({
-        "door_status": status  # gunakan key 'door_status'
+        "door_status": status 
     })
     props = Properties(PacketTypes.PUBLISH)
     props.PayloadFormatIndicator = 1
@@ -126,10 +114,7 @@ def publish_sensor_door(car_id: str, status: str, qos: int = 1, retained: bool =
     print(f"[Publisher][SENSOR][DOOR] Car={car_id} | Door={status} | QoS={qos}")
 
 def publish_sensor_hood(car_id: str, status: str, qos: int = 1, retained: bool = False):
-    """
-    Publikasikan status sensor hood dalam payload JSON
-    { "hood_status": "open" } atau { "hood_status": "closed" }
-    """
+    
     topic = f"{TOPIC_SENSOR_HOOD}/{car_id}"
     payload = json.dumps({
         "hood_status": status  # gunakan key 'hood_status'
@@ -140,9 +125,7 @@ def publish_sensor_hood(car_id: str, status: str, qos: int = 1, retained: bool =
     print(f"[Publisher][SENSOR][HOOD] Car={car_id} | Hood={status} | QoS={qos}")
 
 def publish_status_update(car_id: str, status: str, qos: int = 1, retained: bool = True):
-    """
-    Publikasikan status umum mobil: "available", "on display", "sold".
-    """
+
     topic = f"{TOPIC_STATUS}/{car_id}"
     payload = json.dumps({
         "car_id": car_id,
@@ -154,9 +137,7 @@ def publish_status_update(car_id: str, status: str, qos: int = 1, retained: bool
     print(f"[Publisher][STATUS] Car={car_id} | Status={status} | QoS={qos} | Retained={retained}")
 
 def publish_price_change(car_id: str, new_price: float, qos: int = 1, retained: bool = False):
-    """
-    Publikasikan perubahan harga (sekali saja).
-    """
+
     topic = f"{TOPIC_STATUS}/{car_id}/price"
     payload = json.dumps({
         "car_id": car_id,
@@ -168,9 +149,7 @@ def publish_price_change(car_id: str, new_price: float, qos: int = 1, retained: 
     print(f"[Publisher][PRICE] Car={car_id} | New Price={new_price} | QoS={qos}")
 
 def publish_expiring_message(car_id: str, message: str, expiry_interval: int = 5):
-    """
-    Kirim pesan dengan Message Expiry Interval.
-    """
+ 
     topic = f"{TOPIC_EXPIRY}/{car_id}"
     payload = json.dumps({
         "car_id": car_id,
@@ -183,9 +162,7 @@ def publish_expiring_message(car_id: str, message: str, expiry_interval: int = 5
     print(f"[Publisher][EXPIRY‐MSG] Car={car_id} | Message='{message}' | Expiry={expiry_interval}s")
 
 def send_request(car_id: str, command: str, timeout: float = 5.0):
-    """
-    Implementasi Request‐Response (MQTT 5.0).
-    """
+
     request_id = str(uuid.uuid4())
     response_topic = f"{UNIQUE_TOPIC_PREFIX}/response/{client._client_id.decode()}/{request_id}"
     client.subscribe(response_topic, qos=1)
@@ -212,7 +189,6 @@ def send_request(car_id: str, command: str, timeout: float = 5.0):
     client.unsubscribe(response_topic)
     print(f"[Publisher][REQ] Unsubscribed from {response_topic}")
 
-# --------------------------- BAGIAN UTAMA ---------------------------
 if __name__ == "__main__":
     time.sleep(1.0)  # tunggu koneksi stabil
     
