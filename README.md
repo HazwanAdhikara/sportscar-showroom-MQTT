@@ -48,54 +48,47 @@ python3 publisher.py
 
 > Melakukan beberapa contoh publish (inventory, status, sensor, price, expiry, request, flow), lalu disconnect normal.
 
-4. Authentication
+## Implementasi Fitur
 
-   > Menggunakan username_pw_set(USERNAME, PASSWORD) jika broker butuh autentikasi. Jika broker publik (misal HiveMQ) tidak memerlukan, field tersebut bisa dikosongkan atau di‐comment.
-   > <img src="./img/authentication.jpg">
+### **MQTT / MQTTS**
 
-5. QoS 0, 1, 2
-   > Semua fungsi publish (publish_inventory_update, publish_sensor_door, dll.) menerima parameter qos. Di subscriber.py disebutkan pada topik:
+- Kode: `publisher.py` & `subscriber.py`
+
+- Penjelasan:
+  - Di kedua skrip, koneksi dibuat dengan `Client(..., protocol=MQTTv5)` dan `client.tls_set(...)` untuk mendukung MQTTS (port 8883).
+  - Jika ingin plain MQTT, cukup ganti `BROKER_PORT=1883` dan komentar baris tls_set(...).
+
+### **Authentication**
+
+> Menggunakan username_pw_set(USERNAME, PASSWORD) jika broker butuh autentikasi. Jika broker publik (misal HiveMQ) tidak memerlukan, field tersebut bisa dikosongkan atau di‐comment.
+> <img src="./img/authentication.jpg">
+
+### **QoS 0, 1, 2**
+
+> Semua fungsi publish (publish_inventory_update, publish_sensor_door, dll.) menerima parameter qos. Di subscriber.py disebutkan pada topik:
 
 ```
-1. QoS 2 untuk inventaris (paling andal, tanpa duplikat),
-2. QoS 1 untuk sensor, status, price update, request–response, expiry, flow, LWT.
-3. (QoS 0 juga bisa digunakan di fungsi, mis. publish_price_change(..., qos=0) bila diinginkan).
+1. QoS 0: “At most once” (fire‐and‐forget).
+2. QoS 1: “At least once” (bisa duplikat).
+3. QoS 2: “Exactly once” (handshake 4‐step, paling andal, tanpa duplikat).
 ```
 
 <img src="./img/qos.jpg">
 
-6. Retained Messages
-   Subscriber baru yang kemudian subscribe ke topik tersebut langsung menerima pesan terakhir yang di‐retained.
-   <img src="./img/retained message.jpg">
-   <img src="./img/retained message 2.jpg">
+### **Retained Messages**
 
-7. Uji LWT (Last Will)
+Subscriber baru yang kemudian subscribe ke topik tersebut langsung menerima pesan terakhir yang di‐retained.
+<img src="./img/retained message.jpg">
+<img src="./img/retained message 2.jpg">
+
+### **Uji LWT (Last Will)**
 
 > Setelah `publisher.py` sedang berjalan, force‐kill (misal `kill -9 PID`) sehingga publisher tidak melakukan disconnect clean. Subscriber akan mencetak LWT.
 > <img src="./img/lwt.jpg"> > <img src="./img/kill lwt.jpg">
 
-8. Jalankan Skrip Pengujian
+### **Flow Control (Rate Limiting)**
 
-- Request–Response:
-
-```
-python3 test_request_response.py
-```
-
-- Expiry:
-
-```
-python3 test_expiry.py
-```
-
-- Flow Control:
-
-```
-python3 test_flow_control.py
-```
-
-9. Flow Control (Rate Limiting)
-   > Membatasi kecepatan publish supaya broker dan subscriber tidak kewalahan.
+> Membatasi kecepatan publish supaya broker dan subscriber tidak kewalahan.
 
 ```
 test_flow_control.py menguji tiga kasus:
@@ -107,11 +100,32 @@ test_flow_control.py menguji tiga kasus:
 <img src="./img/flow control.jpg">
 <img src="./img/flow control 2.jpg">
 
-10. Ping–Pong (Keep-Alive)
+### **Ping–Pong (Keep-Alive)**
+
     > Disini kita tidak mencode manual PING/PONG, karena library Paho MQTT yang menangani secara built‐in. Paho MQTT otomatis kirim PINGREQ/PINGRESP untuk menjaga koneksi tetap hidup.
 
 ```
 client.connect(BROKER_HOST, BROKER_PORT, keepalive=KEEPALIVE)
+```
+
+### **Jalankan Skrip Pengujian**
+
+- Request–Response:
+
+```
+python3 request_response.py
+```
+
+- Expiry:
+
+```
+python3 expiry.py
+```
+
+- Flow Control:
+
+```
+python3 flow_control.py
 ```
 
 ## 🧪 Testing Scenarios
